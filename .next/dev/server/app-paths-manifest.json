@@ -1,0 +1,4 @@
+{
+  "/api/dns-check/route": "app/api/dns-check/route.js",
+  "/page": "app/page.js"
+}
