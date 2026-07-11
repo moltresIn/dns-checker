@@ -4,7 +4,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DNS Lens",
-  description: "Minimal DNS propagation checker prototype built with Next.js."
+  description: "Real-time DNS propagation checker with live streaming and timeline tracking.",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }]
+  }
 };
 
 type RootLayoutProps = Readonly<{

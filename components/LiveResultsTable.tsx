@@ -33,6 +33,12 @@ export function LiveResultsTable({
     return () => clearInterval(interval);
   }, []);
 
+  const streamStatus = loading
+    ? "Streaming live..."
+    : hasChecked
+      ? "Check complete"
+      : "Awaiting next run";
+
   return (
     <section className="glass-panel overflow-hidden rounded-[32px]">
       <div className="border-b border-white/10 px-6 py-5">
@@ -42,7 +48,7 @@ export function LiveResultsTable({
             <h2 className="mt-2 text-2xl font-semibold text-slate-50">Resolver stream</h2>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
-            <span>{loading ? "Streaming live..." : "Awaiting next run"}</span>
+            <span>{streamStatus}</span>
             {paused ? (
               <span className="rounded-full border border-amber-400/20 px-3 py-1 text-amber-200">
                 Updates paused
