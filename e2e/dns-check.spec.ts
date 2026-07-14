@@ -10,15 +10,16 @@ test.describe("DNS Lens", () => {
       })
     ).toBeVisible();
 
-    await expect(page.getByRole("button", { name: /bulk search/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /single search/i })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /single search/i })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /bulk search/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /check dns/i })).toBeVisible();
+
+    await page.getByRole("tab", { name: /bulk search/i }).click();
     await expect(page.getByRole("button", { name: /run bulk check/i })).toBeVisible();
   });
 
   test("single domain check streams resolver results", async ({ page }) => {
     await page.goto("/");
-
-    await page.getByRole("button", { name: /single search/i }).click();
 
     const domainInput = page.getByPlaceholder("example.com");
     await domainInput.fill("example.com");
@@ -32,19 +33,26 @@ test.describe("DNS Lens", () => {
       timeout: 15_000
     });
 
-    await expect(page.locator("button").filter({ has: page.getByText("example.com", { exact: true }) })).toBeVisible();
+    await expect(
+      page.locator("button").filter({ has: page.getByText("example.com", { exact: true }) })
+    ).toBeVisible();
 
     await expect(page.getByRole("heading", { name: /resolver stream/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /resolver agreement/i })).toBeVisible();
 
     const resultsTable = page.getByRole("table");
     await expect(resultsTable.getByText("Cloudflare DNS")).toBeVisible({ timeout: 30_000 });
 
     const statusBadges = resultsTable.locator("tbody").getByText(/^(success|failed|timeout)$/i);
     await expect(statusBadges.first()).toBeVisible({ timeout: 45_000 });
+
+    await expect(page.getByText(/\d+\/\d+\s+agree on/i)).toBeVisible({ timeout: 45_000 });
   });
 
   test("bulk mode shows multiple domain cards", async ({ page }) => {
     await page.goto("/");
+
+    await page.getByRole("tab", { name: /bulk search/i }).click();
 
     const bulkTextarea = page.getByPlaceholder(/example\.com\nopenai\.com/i);
     await bulkTextarea.click();
@@ -75,7 +83,6 @@ test.describe("DNS Lens", () => {
   test("shows validation error for invalid domain input", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("button", { name: /single search/i }).click();
     await page.getByPlaceholder("example.com").fill("not a valid domain!!!");
 
     const submit = page.getByRole("button", { name: /check dns/i });

@@ -1,4 +1,20 @@
+"use client";
+
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Box } from "@/components/animate-ui/components/layout/box";
+import {
+  MetricCard,
+  Panel,
+  PanelContent,
+  PanelDescription,
+  PanelTitle
+} from "@/components/animate-ui/components/layout/panel";
+import { Input } from "@/components/animate-ui/components/form/input";
+import { Field, FieldLabel } from "@/components/animate-ui/components/form/field";
+import { Eyebrow, Text } from "@/components/animate-ui/components/typography/text";
+import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
 import type { ResolverFilterOptions, ResolverFilters } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type FilterGroupKey = "providers" | "regions" | "countries";
 
@@ -20,6 +36,9 @@ type FilterGroupProps = {
   onSelectionChange: (key: FilterGroupKey, values: string[]) => void;
 };
 
+const chipButtonClassName =
+  "rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-neutral-400 transition hover:border-neutral-500 hover:text-white";
+
 function FilterGroup({
   label,
   filterKey,
@@ -28,74 +47,85 @@ function FilterGroup({
   onSelectionChange
 }: FilterGroupProps) {
   return (
-    <div className="panel-muted rounded-[24px] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-white">{label}</p>
-          <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
-            {selected.length} selected
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
-          <button
+    <Box className="panel-muted rounded-[24px] p-4">
+      <Box className="flex flex-wrap items-center justify-between gap-3">
+        <PanelContent>
+          <Text className="text-sm font-medium text-white">{label}</Text>
+          <Text className="mt-1 text-xs text-slate-500">{selected.length} selected</Text>
+        </PanelContent>
+        <Box className="flex items-center gap-2">
+          <Button
             type="button"
+            variant="outline"
             onClick={() => onSelectionChange(filterKey, options)}
+            hoverScale={1.02}
+            tapScale={0.98}
             suppressHydrationWarning
-            className="rounded-full border border-white/10 px-3 py-1.5 transition hover:border-sky-300/30 hover:text-white"
+            className={chipButtonClassName}
           >
             Select All
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
             onClick={() => onSelectionChange(filterKey, [])}
+            hoverScale={1.02}
+            tapScale={0.98}
             suppressHydrationWarning
-            className="rounded-full border border-white/10 px-3 py-1.5 transition hover:border-rose-300/30 hover:text-white"
+            className={cn(chipButtonClassName, "hover:border-rose-300/30")}
           >
             Clear All
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Box>
+      </Box>
 
-      <div className="subtle-scrollbar mt-4 flex max-h-48 flex-wrap gap-2 overflow-y-auto pr-1">
+      <Box className="subtle-scrollbar mt-4 flex max-h-48 flex-wrap gap-2 overflow-y-auto pr-1">
         {options.map((option) => {
           const isSelected = selected.includes(option);
 
           return (
-            <label
+            <Box
               key={option}
-              className={[
-                "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm transition",
+              role="button"
+              tabIndex={0}
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors",
                 isSelected
-                  ? "border-sky-300/40 bg-sky-300/10 text-white"
+                  ? "border-neutral-400/40 bg-neutral-400/10 text-white"
                   : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20 hover:text-white"
-              ].join(" ")}
-            >
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() =>
+              )}
+              onClick={() =>
+                onSelectionChange(
+                  filterKey,
+                  isSelected
+                    ? selected.filter((item) => item !== option)
+                    : [...selected, option]
+                )
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
                   onSelectionChange(
                     filterKey,
                     isSelected
                       ? selected.filter((item) => item !== option)
                       : [...selected, option]
-                  )
+                  );
                 }
-                suppressHydrationWarning
-                className="sr-only"
-              />
-              <span
-                className={[
+              }}
+            >
+              <Box
+                className={cn(
                   "h-2.5 w-2.5 rounded-full transition",
-                  isSelected ? "bg-sky-300" : "bg-slate-600"
-                ].join(" ")}
+                  isSelected ? "bg-neutral-300" : "bg-neutral-600"
+                )}
               />
               {option}
-            </label>
+            </Box>
           );
         })}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -109,49 +139,49 @@ export function ResolverFilters({
   onResetFilters
 }: ResolverFiltersProps) {
   return (
-    <section className="glass-panel rounded-[32px] p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Resolver Filters</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-50">Narrow the resolver set</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Filter by provider, region, country, or search terms. The table and globe update from
-            the same filter state, so both views stay aligned.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="metric-card rounded-2xl px-4 py-3 text-sm text-slate-300">
-            Showing <span className="font-semibold text-white">{matchedCount}</span> of{" "}
-            <span className="font-semibold text-white">{totalCount}</span> resolvers
-          </div>
-          <button
+    <Panel className="p-6 lg:p-8">
+      <Box className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <PanelContent>
+          <Eyebrow>Resolver filters</Eyebrow>
+          <PanelTitle className="mt-2">Narrow the resolver set</PanelTitle>
+          <PanelDescription className="mt-2 max-w-2xl">
+            Filter by provider, region, country, or search terms. The table and
+            globe update from the same filter state, so both views stay aligned.
+          </PanelDescription>
+        </PanelContent>
+        <Box className="flex items-center gap-3">
+          <MetricCard className="px-4 py-3 text-sm text-slate-300">
+            Showing <SlidingNumber number={matchedCount} className="font-semibold text-white" /> of{" "}
+            <SlidingNumber number={totalCount} className="font-semibold text-white" /> resolvers
+          </MetricCard>
+          <Button
             type="button"
+            variant="outline"
             onClick={onResetFilters}
+            hoverScale={1.01}
+            tapScale={0.99}
             suppressHydrationWarning
-            className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-white/20 hover:text-white"
+            className="h-auto rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-slate-300 shadow-none hover:border-white/20 hover:text-white"
           >
             Reset Filters
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Box>
+      </Box>
 
-      <div className="mt-6">
-        <label className="flex flex-col gap-3">
-          <span className="text-sm font-medium uppercase tracking-[0.24em] text-slate-400">
-            Search
-          </span>
-          <input
+      <Box className="mt-6">
+        <Field>
+          <FieldLabel>Search</FieldLabel>
+          <Input
             type="search"
             value={filters.search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search by resolver, provider, country, region, city, or server"
             suppressHydrationWarning
-            className="field-shell h-14 rounded-2xl px-4 text-base text-slate-100 outline-none transition duration-200 placeholder:text-slate-500"
           />
-        </label>
-      </div>
+        </Field>
+      </Box>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-3">
+      <Box className="mt-6 grid gap-4 xl:grid-cols-3">
         <FilterGroup
           label="Provider"
           filterKey="providers"
@@ -173,7 +203,7 @@ export function ResolverFilters({
           selected={filters.countries}
           onSelectionChange={onSelectionChange}
         />
-      </div>
-    </section>
+      </Box>
+    </Panel>
   );
 }

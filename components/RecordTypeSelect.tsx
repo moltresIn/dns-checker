@@ -1,3 +1,5 @@
+import { Field, FieldLabel } from "@/components/animate-ui/components/form/field";
+import { SelectMenu } from "@/components/animate-ui/components/form/select-menu";
 import { RECORD_TYPES, type RecordType } from "@/lib/types";
 
 type RecordTypeSelectProps = {
@@ -12,23 +14,18 @@ export function RecordTypeSelect({
   disabled = false
 }: RecordTypeSelectProps) {
   return (
-    <label className="flex flex-col gap-3">
-      <span className="text-sm font-medium uppercase tracking-[0.24em] text-slate-400">
-        Record Type
-      </span>
-      <select
+    <Field>
+      <FieldLabel uppercase>Record Type</FieldLabel>
+      <SelectMenu
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value as RecordType)}
-        suppressHydrationWarning
-        className="field-shell h-14 rounded-2xl px-4 text-base text-slate-100 outline-none transition duration-200 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {RECORD_TYPES.map((record) => (
-          <option key={record} value={record} className="bg-slate-950">
-            {record}
-          </option>
-        ))}
-      </select>
-    </label>
+        aria-label="Record type"
+        onChange={(nextValue) => onChange(nextValue as RecordType)}
+        options={RECORD_TYPES.map((record) => ({
+          value: record,
+          label: record
+        }))}
+      />
+    </Field>
   );
 }

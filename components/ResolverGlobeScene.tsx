@@ -53,16 +53,16 @@ const countryFeatures = (
 function getStatusColor(status: ResolverStatus) {
   switch (status) {
     case "pending":
-      return "#7DD3FC";
+      return "#a3a3a3";
     case "success":
-      return "#53E3A6";
+      return "#fafafa";
     case "failed":
-      return "#FF6B6B";
+      return "#525252";
     case "timeout":
-      return "#FBBF24";
+      return "#737373";
     case "idle":
     default:
-      return "#7DD3FC";
+      return "#404040";
   }
 }
 
@@ -96,9 +96,9 @@ function createWorldTexture() {
   const path = geoPath(projection, context);
 
   const oceanGradient = context.createLinearGradient(0, 0, width, height);
-  oceanGradient.addColorStop(0, "#061325");
-  oceanGradient.addColorStop(0.4, "#0A2743");
-  oceanGradient.addColorStop(1, "#144A74");
+  oceanGradient.addColorStop(0, "#050505");
+  oceanGradient.addColorStop(0.4, "#0a0a0a");
+  oceanGradient.addColorStop(1, "#171717");
   context.fillStyle = oceanGradient;
   context.fillRect(0, 0, width, height);
 
@@ -110,28 +110,28 @@ function createWorldTexture() {
     height * 0.5,
     width * 0.7
   );
-  bloomGradient.addColorStop(0, "rgba(125, 211, 252, 0.26)");
-  bloomGradient.addColorStop(1, "rgba(125, 211, 252, 0)");
+  bloomGradient.addColorStop(0, "rgba(255, 255, 255, 0.08)");
+  bloomGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
   context.fillStyle = bloomGradient;
   context.fillRect(0, 0, width, height);
 
   context.beginPath();
   path(geoGraticule10());
-  context.strokeStyle = "rgba(201, 229, 247, 0.08)";
+  context.strokeStyle = "rgba(255, 255, 255, 0.06)";
   context.lineWidth = 0.8;
   context.stroke();
 
   for (const country of countryFeatures) {
     context.beginPath();
     path(country as never);
-    context.fillStyle = "#1F4B3B";
+    context.fillStyle = "#1a1a1a";
     context.fill();
   }
 
   for (const country of countryFeatures) {
     context.beginPath();
     path(country as never);
-    context.strokeStyle = "rgba(238, 248, 231, 0.55)";
+    context.strokeStyle = "rgba(255, 255, 255, 0.18)";
     context.lineWidth = 0.65;
     context.stroke();
   }
@@ -161,7 +161,7 @@ function GlobeSurface() {
         <sphereGeometry args={[GLOBE_RADIUS, 96, 96]} />
         <meshStandardMaterial
           map={worldTexture}
-          color="#9EC8E8"
+          color="#737373"
           roughness={0.92}
           metalness={0.04}
         />
@@ -272,11 +272,11 @@ function GlobeShell() {
     <group>
       <mesh scale={1.04}>
         <sphereGeometry args={[GLOBE_RADIUS, 48, 48]} />
-        <meshBasicMaterial color="#7DD3FC" transparent opacity={0.05} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.04} />
       </mesh>
       <mesh scale={1.065}>
         <sphereGeometry args={[GLOBE_RADIUS, 32, 32]} />
-        <meshBasicMaterial color="#9FDFFF" transparent opacity={0.03} />
+        <meshBasicMaterial color="#d4d4d4" transparent opacity={0.025} />
       </mesh>
     </group>
   );
@@ -294,12 +294,12 @@ export default function ResolverGlobeScene({
       dpr={[1, 1.8]}
       className="h-full w-full"
     >
-      <color attach="background" args={["#08111F"]} />
-      <fog attach="fog" args={["#08111F", 7, 11]} />
+      <color attach="background" args={["#000000"]} />
+      <fog attach="fog" args={["#000000", 7, 11]} />
       <ambientLight intensity={1.5} />
-      <directionalLight position={[4, 5, 3]} intensity={2.2} color="#F5FBFF" />
-      <pointLight position={[-5, -3, -4]} intensity={1.1} color="#53E3A6" />
-      <pointLight position={[0, 2, 6]} intensity={0.7} color="#7DD3FC" />
+      <directionalLight position={[4, 5, 3]} intensity={2.2} color="#fafafa" />
+      <pointLight position={[-5, -3, -4]} intensity={1.1} color="#d4d4d4" />
+      <pointLight position={[0, 2, 6]} intensity={0.7} color="#a3a3a3" />
       <GlobeSurface />
       <GlobeShell />
       {resolvers.map((resolver) => (

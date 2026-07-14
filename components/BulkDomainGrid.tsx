@@ -1,3 +1,13 @@
+"use client";
+
+import { Box } from "@/components/animate-ui/components/layout/box";
+import {
+  Panel,
+  PanelContent,
+  PanelDescription,
+  PanelTitle
+} from "@/components/animate-ui/components/layout/panel";
+import { Eyebrow } from "@/components/animate-ui/components/typography/text";
 import { DomainSummaryCard } from "@/components/DomainSummaryCard";
 import { createDomainState, type DomainViewState } from "@/lib/domainState";
 import type { RecordType } from "@/lib/types";
@@ -26,41 +36,48 @@ export function BulkDomainGrid({
   }
 
   return (
-    <section className="glass-panel rounded-[32px] p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
-            Bulk View
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-50">
-            Per-domain status
-          </h2>
-        </div>
-        <p className="max-w-2xl text-sm leading-6 text-slate-400">
+    <Panel className="p-6 lg:p-8">
+      <Box className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <PanelContent>
+          <Eyebrow>Bulk view</Eyebrow>
+          <PanelTitle className="mt-2">Per-domain status</PanelTitle>
+        </PanelContent>
+        <PanelDescription className="max-w-2xl">
           Select a domain to inspect its globe, live resolver stream, and
           timeline. Summary cards stay visible while the active detail panel
           changes below.
-        </p>
-      </div>
+        </PanelDescription>
+      </Box>
 
-      <div className="mt-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-        {domainOrder.map((domain) => {
+      <Box className="mt-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        {domainOrder.map((domain, index) => {
           const state =
             domainStates[domain] ?? createDomainState(domain, recordType);
 
           return (
-            <DomainSummaryCard
+            <Box
               key={domain}
-              domain={domain}
-              state={state}
-              isActive={activeDomain === domain}
-              jobRunning={jobRunning}
-              hydrated={hydrated}
-              onClick={onSelectDomain}
-            />
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: index * 0.05,
+                type: "spring",
+                stiffness: 260,
+                damping: 24
+              }}
+            >
+              <DomainSummaryCard
+                domain={domain}
+                state={state}
+                isActive={activeDomain === domain}
+                jobRunning={jobRunning}
+                hydrated={hydrated}
+                onClick={onSelectDomain}
+              />
+            </Box>
           );
         })}
-      </div>
-    </section>
+      </Box>
+    </Panel>
   );
 }

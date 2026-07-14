@@ -1,10 +1,25 @@
 "use client";
 
 import type { FormEvent } from "react";
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Alert } from "@/components/animate-ui/components/feedback/alert";
+import { Form } from "@/components/animate-ui/components/form/form";
+import { Field, FieldLabel } from "@/components/animate-ui/components/form/field";
+import { SelectMenu } from "@/components/animate-ui/components/form/select-menu";
+import { Box } from "@/components/animate-ui/components/layout/box";
+import { Panel } from "@/components/animate-ui/components/layout/panel";
+import {
+  Tabs,
+  TabsHighlight,
+  TabsHighlightItem,
+  TabsList,
+  TabsTrigger
+} from "@/components/animate-ui/primitives/animate/tabs";
 import { BulkInput } from "@/components/BulkInput";
 import { DomainInput } from "@/components/DomainInput";
 import { RecordTypeSelect } from "@/components/RecordTypeSelect";
 import { MAX_DOMAINS } from "@/hooks/useDnsJob";
+import { cn } from "@/lib/utils";
 import type { RecordType } from "@/lib/types";
 
 export type SearchMode = "single" | "bulk";
@@ -29,6 +44,15 @@ type SearchFormProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
+const primaryButtonClassName =
+  "h-14 rounded-2xl bg-gradient-to-r from-neutral-200 to-white px-6 text-sm font-semibold uppercase tracking-[0.24em] text-black shadow-none hover:from-white hover:to-neutral-100 disabled:opacity-60";
+
+const secondaryButtonClassName =
+  "h-12 rounded-2xl border border-white/10 bg-transparent px-6 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 shadow-none hover:border-white/20 hover:bg-white/[0.04] sm:h-14";
+
+const modeTabClassName =
+  "relative z-10 flex-1 rounded-[18px] px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] transition-all data-[state=active]:bg-white data-[state=active]:text-black data-[state=inactive]:bg-transparent data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:text-white";
+
 export function SearchForm({
   searchMode,
   onSearchModeChange,
@@ -49,48 +73,39 @@ export function SearchForm({
   onSubmit
 }: SearchFormProps) {
   return (
-    <section className="glass-panel rounded-[32px] p-6 lg:p-8">
-      <form onSubmit={onSubmit} className="grid gap-6" suppressHydrationWarning>
-        {/* Mode toggle */}
-        <div className="flex flex-col gap-3">          <span className="text-sm font-medium uppercase tracking-[0.24em] text-slate-400">
-            Search Mode
-          </span>
-          <div className="inline-flex w-full max-w-md rounded-[22px] border border-white/10 bg-slate-950/50 p-1">
-            {(
-              [
-                { value: "single", label: "Single Search" },
-                { value: "bulk", label: "Bulk Search" }
-              ] as const
-            ).map((mode) => {
-              const active = searchMode === mode.value;
+    <Panel className="p-6 lg:p-8">
+      <Form onSubmit={onSubmit} className="grid gap-6" suppressHydrationWarning>
+        <Field>
+          <FieldLabel>Search mode</FieldLabel>
+          <Tabs
+            value={searchMode}
+            onValueChange={(value) => onSearchModeChange(value as SearchMode)}
+            className="w-full max-w-md"
+          >
+            <TabsList className="inline-flex w-full rounded-[22px] border border-white/10 bg-black/60 p-1">
+              <TabsHighlight className="rounded-[18px] bg-gradient-to-r from-neutral-300 to-white">
+                <TabsHighlightItem value="single" className="flex-1 rounded-[18px]">
+                  <TabsTrigger value="single" className={modeTabClassName}>
+                    Single Search
+                  </TabsTrigger>
+                </TabsHighlightItem>
+                <TabsHighlightItem value="bulk" className="flex-1 rounded-[18px]">
+                  <TabsTrigger value="bulk" className={modeTabClassName}>
+                    Bulk Search
+                  </TabsTrigger>
+                </TabsHighlightItem>
+              </TabsHighlight>
+            </TabsList>
+          </Tabs>
+        </Field>
 
-              return (
-                <button
-                  key={mode.value}
-                  type="button"
-                  onClick={() => onSearchModeChange(mode.value)}
-                  suppressHydrationWarning
-                  className={[
-                    "flex-1 rounded-[18px] px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] transition",
-                    active
-                      ? "bg-gradient-to-r from-sky-300 to-emerald-300 text-slate-950"
-                      : "text-slate-300 hover:text-white"
-                  ].join(" ")}
-                >
-                  {mode.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div
-          className={[
+        <Box
+          className={cn(
             "grid gap-5",
             searchMode === "bulk"
               ? "xl:grid-cols-[minmax(0,1fr)_220px_180px]"
               : "xl:grid-cols-[minmax(0,1fr)_220px_180px_220px]"
-          ].join(" ")}
+          )}
         >
           {searchMode === "bulk" ? (
             <BulkInput
@@ -116,74 +131,71 @@ export function SearchForm({
             disabled={jobRunning}
           />
 
-          <label className="flex flex-col gap-3">
-            <span className="text-sm font-medium uppercase tracking-[0.24em] text-slate-400">
-              Retries
-            </span>
-            <select
-              value={retryCount}
+          <Field>
+            <FieldLabel>Retries</FieldLabel>
+            <SelectMenu
+              value={String(retryCount)}
               disabled={jobRunning}
-              onChange={(event) => onRetryCountChange(Number(event.target.value))}
-              suppressHydrationWarning
-              className="field-shell h-14 rounded-2xl px-4 text-base text-slate-100 outline-none transition duration-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {[0, 1, 2, 3].map((value) => (
-                <option key={value} value={value} className="bg-slate-950">
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
+              aria-label="Retry count"
+              onChange={(nextValue) => onRetryCountChange(Number(nextValue))}
+              options={[0, 1, 2, 3].map((count) => ({
+                value: String(count),
+                label: String(count)
+              }))}
+            />
+          </Field>
 
           {searchMode === "single" ? (
-            <div className="flex flex-col justify-end gap-3">
-              <button
+            <Box className="flex flex-col justify-end gap-3">
+              <Button
                 type="submit"
                 disabled={jobRunning || inputIsSettling}
-                suppressHydrationWarning
-                className="inline-flex h-14 items-center justify-center rounded-2xl bg-gradient-to-r from-sky-300 to-emerald-300 px-6 text-sm font-semibold uppercase tracking-[0.24em] text-slate-950 transition duration-200 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                hoverScale={1.02}
+                tapScale={0.98}
+                className={primaryButtonClassName}
               >
                 {jobRunning ? "Streaming..." : "Check DNS"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={onTogglePause}
-                suppressHydrationWarning
-                className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 px-6 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:border-white/20 hover:text-white"
+                hoverScale={1.01}
+                tapScale={0.99}
+                className={secondaryButtonClassName}
               >
                 {livePaused ? "Resume Live" : "Pause Live"}
-              </button>
-            </div>
+              </Button>
+            </Box>
           ) : null}
-        </div>
+        </Box>
 
         {searchMode === "bulk" ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
+          <Box className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button
               type="submit"
               disabled={jobRunning || inputIsSettling}
-              suppressHydrationWarning
-              className="inline-flex h-14 items-center justify-center rounded-2xl bg-gradient-to-r from-sky-300 to-emerald-300 px-6 text-sm font-semibold uppercase tracking-[0.24em] text-slate-950 transition duration-200 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+              hoverScale={1.02}
+              tapScale={0.98}
+              className={primaryButtonClassName}
             >
               {jobRunning ? "Streaming..." : "Run Bulk Check"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={onTogglePause}
-              suppressHydrationWarning
-              className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/10 px-6 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:border-white/20 hover:text-white sm:h-14"
+              hoverScale={1.01}
+              tapScale={0.99}
+              className={secondaryButtonClassName}
             >
               {livePaused ? "Resume Live" : "Pause Live"}
-            </button>
-          </div>
+            </Button>
+          </Box>
         ) : null}
-      </form>
+      </Form>
 
-      {error ? (
-        <div className="mt-5 rounded-2xl border border-rose-400/20 bg-rose-400/[0.06] px-4 py-3 text-sm text-rose-200">
-          {error}
-        </div>
-      ) : null}
-    </section>
+      {error ? <Alert className="mt-5">{error}</Alert> : null}
+    </Panel>
   );
 }

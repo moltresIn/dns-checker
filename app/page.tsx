@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, useDeferredValue } from "react";
+import { Box, Main } from "@/components/animate-ui/components/layout/box";
 import { BulkDomainGrid } from "@/components/BulkDomainGrid";
 import { HeroPanel } from "@/components/HeroPanel";
-import { LiveResultsTable } from "@/components/LiveResultsTable";
-import { ResolverFilters } from "@/components/ResolverFilters";
-import { ResolverGlobe } from "@/components/ResolverGlobe";
+import { ResultsSection } from "@/components/ResultsSection";
 import { SearchForm, type SearchMode } from "@/components/SearchForm";
-import { TimelineChart } from "@/components/TimelineChart";
 import { useDnsJob } from "@/hooks/useDnsJob";
 import { useSocket } from "@/hooks/useSocket";
 import { useTimeline } from "@/hooks/useTimeline";
@@ -21,11 +18,12 @@ import {
 import { parseBulkPreviewInput } from "@/lib/inputParser";
 import { RESOLVERS } from "@/lib/resolvers";
 import type { RecordType, ResolverFilters as ResolverFiltersState } from "@/lib/types";
+import { useEffect, useMemo, useState, useDeferredValue } from "react";
 
 const FILTER_OPTIONS = getResolverFilterOptions(RESOLVERS);
 
 export default function HomePage() {
-  const [searchMode, setSearchMode] = useState<SearchMode>("bulk");
+  const [searchMode, setSearchMode] = useState<SearchMode>("single");
   const [bulkInput, setBulkInput] = useState("example.com\nopenai.com");
   const [singleInput, setSingleInput] = useState("example.com");
   const [recordType, setRecordType] = useState<RecordType>("A");
@@ -125,8 +123,8 @@ export default function HomePage() {
   );
 
   return (
-    <main className="min-h-screen px-5 py-8 sm:px-8 lg:px-10">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+    <Main className="min-h-screen px-5 py-8 sm:px-8 lg:px-10">
+      <Box className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         <HeroPanel
           domainCount={domainOrder.length}
           totalSuccessCount={totalSuccessCount}
@@ -166,46 +164,31 @@ export default function HomePage() {
         />
 
         {activeDomainState ? (
-          <>
-            <ResolverFilters
-              filters={filters}
-              options={FILTER_OPTIONS}
-              matchedCount={matchedMapCount}
-              totalCount={RESOLVERS.length}
-              onSearchChange={(value) =>
-                setFilters((current) => ({ ...current, search: value }))
-              }
-              onSelectionChange={(key, values) =>
-                setFilters((current) => ({ ...current, [key]: values }))
-              }
-              onResetFilters={() => setFilters(EMPTY_FILTERS)}
-            />
-
-            <ResolverGlobe
-              resolvers={mappedResults}
-              matchedCount={matchedMapCount}
-              totalCount={RESOLVERS.length}
-              loading={jobRunning}
-            />
-
-            <TimelineChart
-              timeline={activeDomainState.timeline}
-              refreshing={timelineRefreshing}
-              onRefresh={refreshTimeline}
-              onClear={clearTimeline}
-              onExport={exportTimeline}
-            />
-
-            <LiveResultsTable
-              results={filteredResults}
-              loading={jobRunning}
-              paused={livePaused}
-              hasChecked={activeDomainState.checkedAt !== null}
-              hasActiveFilters={filterIsActive}
-            />
-          </>
+          <ResultsSection
+            filters={filters}
+            filterOptions={FILTER_OPTIONS}
+            matchedMapCount={matchedMapCount}
+            mappedResults={mappedResults}
+            filteredResults={filteredResults}
+            activeDomainState={activeDomainState}
+            jobRunning={jobRunning}
+            livePaused={livePaused}
+            filterIsActive={filterIsActive}
+            totalResolverCount={RESOLVERS.length}
+            timelineRefreshing={timelineRefreshing}
+            onSearchChange={(value) =>
+              setFilters((current) => ({ ...current, search: value }))
+            }
+            onSelectionChange={(key, values) =>
+              setFilters((current) => ({ ...current, [key]: values }))
+            }
+            onResetFilters={() => setFilters(EMPTY_FILTERS)}
+            onRefreshTimeline={refreshTimeline}
+            onClearTimeline={clearTimeline}
+            onExportTimeline={exportTimeline}
+          />
         ) : null}
-      </div>
-    </main>
+      </Box>
+    </Main>
   );
 }

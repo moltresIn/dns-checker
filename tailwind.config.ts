@@ -9,21 +9,53 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0B1220",
-        panel: "#111A2B",
-        panelMuted: "#18233A",
-        line: "#22314D",
-        accent: "#53E3A6",
-        danger: "#FF6B6B",
-        glow: "#7DD3FC",
-        sand: "#DCE6F8"
+        ink: "#050505",
+        panel: "#0F0F0F",
+        panelMuted: "#141414",
+        line: "#262626",
+        accent: "#D4D4D4",
+        danger: "#737373",
+        glow: "#E5E5E5",
+        sand: "#FAFAFA",
+        "bg-deep": "var(--bg-deep)",
+        "bg-surface": "var(--bg-surface)",
+        "bg-elevated": "var(--bg-elevated)",
+        "glow-sky": "var(--glow-sky)",
+        "signal-emerald": "var(--signal-emerald)",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)"
+        },
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)"
+        },
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)"
+        },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)"
+        },
+        destructive: "var(--destructive)",
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)"
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)"
       },
       boxShadow: {
-        panel: "0 24px 80px rgba(4, 10, 24, 0.38)"
+        panel: "0 24px 80px rgba(0, 0, 0, 0.6)"
       },
       backgroundImage: {
         "mesh-radial":
-          "radial-gradient(circle at top, rgba(125, 211, 252, 0.16), transparent 32%), radial-gradient(circle at 80% 20%, rgba(83, 227, 166, 0.14), transparent 28%), linear-gradient(180deg, rgba(11, 18, 32, 0.96), rgba(11, 18, 32, 1))"
+          "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 255, 255, 0.06), transparent 55%), linear-gradient(180deg, #050505 0%, #000000 100%)"
       }
     }
   },

@@ -1,5 +1,16 @@
+"use client";
+
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Box } from "@/components/animate-ui/components/layout/box";
+import {
+  MetricCard,
+  PanelContent
+} from "@/components/animate-ui/components/layout/panel";
+import { Text } from "@/components/animate-ui/components/typography/text";
+import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { DomainViewState } from "@/lib/domainState";
+import { cn } from "@/lib/utils";
 
 type DomainSummaryCardProps = {
   domain: string;
@@ -19,24 +30,35 @@ export function DomainSummaryCard({
   onClick
 }: DomainSummaryCardProps) {
   return (
-    <button
+    <Button
       type="button"
       onClick={() => onClick(domain)}
       suppressHydrationWarning
-      className={[
-        "rounded-[26px] border p-5 text-left shadow-[0_18px_45px_rgba(0,0,0,0.16)] transition",
+      hoverScale={1.01}
+      tapScale={0.99}
+      className={cn(
+        "h-auto w-full justify-start rounded-[26px] border p-5 text-left shadow-[0_18px_45px_rgba(0,0,0,0.16)] transition-colors",
         isActive
-          ? "border-sky-300/40 bg-sky-300/[0.08]"
+          ? "border-neutral-400/40 bg-neutral-400/[0.08] ring-1 ring-neutral-400/20"
           : "border-white/10 bg-white/[0.03] hover:border-white/20"
-      ].join(" ")}
+      )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-lg font-semibold text-white">{domain}</p>
-          <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
-            {state.summary.propagationPercent}% propagated
-          </p>
-        </div>
+      <Box className="flex w-full items-start justify-between gap-3">
+        <PanelContent>
+          <Text className="text-lg font-semibold text-white">{domain}</Text>
+          <Text as="span" className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+            {hydrated ? (
+              <>
+                <SlidingNumber number={state.summary.propagationPercent} />
+                <Text as="span" className="inline">% propagated</Text>
+              </>
+            ) : (
+              <Text as="span" className="inline">
+                {state.summary.propagationPercent}% propagated
+              </Text>
+            )}
+          </Text>
+        </PanelContent>
         <StatusBadge
           status={
             state.summary.status === "complete"
@@ -48,39 +70,38 @@ export function DomainSummaryCard({
                   : "idle"
           }
         />
-      </div>
+      </Box>
 
-      <div className="mt-4 grid grid-cols-3 gap-3 text-sm text-slate-300">
-        <div className="rounded-2xl border border-white/10 bg-slate-950/25 p-3">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
-            Rate
-          </div>
-          <div className="mt-2 font-semibold text-white">
-            {state.summary.successRate}%
-          </div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-slate-950/25 p-3">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
-            Fastest
-          </div>
-          <div className="mt-2 truncate font-semibold text-white">
+      <Box className="mt-4 grid w-full grid-cols-3 gap-3 text-sm text-slate-300">
+        <MetricCard className="border border-white/10 bg-black/40 p-3">
+          <Text as="span" className="text-xs text-slate-500">Rate</Text>
+          <Box className="mt-2 font-semibold text-white">
+            {hydrated ? (
+              <SlidingNumber number={state.summary.successRate} />
+            ) : (
+              `${state.summary.successRate}`
+            )}
+            %
+          </Box>
+        </MetricCard>
+        <MetricCard className="border border-white/10 bg-black/40 p-3">
+          <Text as="span" className="text-xs text-slate-500">Fastest</Text>
+          <Box className="mt-2 truncate font-semibold text-white">
             {state.summary.fastestResolver ?? "-"}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-slate-950/25 p-3">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
-            Updates
-          </div>
-          <div
+          </Box>
+        </MetricCard>
+        <MetricCard className="border border-white/10 bg-black/40 p-3">
+          <Text as="span" className="text-xs text-slate-500">Updates</Text>
+          <Box
             className="mt-2 font-semibold text-white"
             suppressHydrationWarning
           >
             {hydrated && state.checkedAt
               ? new Date(state.checkedAt).toLocaleTimeString()
               : "-"}
-          </div>
-        </div>
-      </div>
-    </button>
+          </Box>
+        </MetricCard>
+      </Box>
+    </Button>
   );
 }

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { PlasmaBackground } from "@/components/background/PlasmaBackground";
+import { Box } from "@/components/animate-ui/components/layout/box";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,8 +18,11 @@ type RootLayoutProps = Readonly<{
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <PlasmaBackground />
+        <Box className="relative z-10">{children}</Box>
+      </body>
     </html>
   );
 }
