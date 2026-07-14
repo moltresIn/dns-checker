@@ -47,11 +47,11 @@
 | ID | Task | Priority | Effort | Depends on | Notes |
 |----|------|----------|--------|------------|-------|
 | C-101 | Consensus summary card after each check | P0 | M | — | ✅ Done — `ConsensusSummaryCard` + `lib/consensus.ts` |
-| C-102 | Expected-value assertion (optional input) | P0 | M | — | Highlight mismatch vs expected IP/value |
-| C-103 | Result chips: Distinct / Consensus / Pending / Failed | P0 | S | C-101 | Compact status row above table |
-| C-104 | One-click copy answer / server / full row | P1 | S | — | Clipboard helpers in table + globe panel |
-| C-105 | Diff mode: current run vs previous run | P1 | M | H-101 | Show added / removed / changed answers |
-| C-106 | Smarter empty/error next-actions | P2 | S | — | Contextual tips for NXDOMAIN, empty MX, TXT SPF issues |
+| C-102 | Expected-value assertion (optional input) | P0 | M | — | ✅ Done — SearchForm field + mismatch highlight |
+| C-103 | Result chips: Distinct / Consensus / Pending / Failed | P0 | S | C-101 | ✅ Done — `ResultChipsRow` on consensus + table |
+| C-104 | One-click copy answer / server / full row | P1 | S | — | ✅ Done — table + globe `CopyButton` |
+| C-105 | Diff mode: current run vs previous run | P1 | M | H-101 | ✅ Done — session snapshot via `previousRunResults` (no H-101 yet) |
+| C-106 | Smarter empty/error next-actions | P2 | S | — | ✅ Done — `lib/resultHints.ts` tips under consensus/table |
 
 ---
 

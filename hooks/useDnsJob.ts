@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { createDomainState, type DomainViewState } from "@/lib/domainState";
 import { createEmptyTimeline } from "@/lib/timelineStore";
-import type { DnsBulkResponse, RecordType } from "@/lib/types";
+import type { DnsBulkResponse, RecordType, ResolverMapNode } from "@/lib/types";
 import type { SocketConnectionState } from "@/hooks/useSocket";
 
 export const MAX_DOMAINS = 20;
@@ -29,6 +29,9 @@ export function useDnsJob({
 }: UseDnsJobOptions) {
   const [domainStates, setDomainStates] = useState<
     Record<string, DomainViewState>
+  >({});
+  const [previousRunResults, setPreviousRunResults] = useState<
+    Record<string, ResolverMapNode[]>
   >({});
   const [domainOrder, setDomainOrder] = useState<string[]>([]);
   const [activeDomain, setActiveDomain] = useState<string | null>(null);
@@ -81,6 +84,24 @@ export function useDnsJob({
           : (nextDomains[0] ?? null)
       );
       setDomainStates((current) => {
+        const snapshots: Record<string, ResolverMapNode[]> = {};
+
+        for (const domain of nextDomains) {
+          const existing = current[domain];
+          if (existing?.checkedAt) {
+            snapshots[domain] = existing.results.map((result) => ({ ...result }));
+          }
+        }
+
+        if (Object.keys(snapshots).length > 0) {
+          Promise.resolve().then(() => {
+            setPreviousRunResults((previous) => ({
+              ...previous,
+              ...snapshots
+            }));
+          });
+        }
+
         const nextState: Record<string, DomainViewState> = {};
 
         for (const domain of nextDomains) {
@@ -147,6 +168,7 @@ export function useDnsJob({
   return {
     domainStates,
     setDomainStates,
+    previousRunResults,
     domainOrder,
     activeDomain,
     setActiveDomain,

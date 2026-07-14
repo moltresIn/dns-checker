@@ -6,7 +6,7 @@ export type ConsensusOutlier = {
   provider: string;
   value: string;
   status: ResolverStatus;
-  reason: "mismatch" | "failed" | "timeout";
+  reason: "mismatch" | "failed" | "timeout" | "expected-mismatch";
 };
 
 export type ConsensusSummary = {
@@ -15,26 +15,56 @@ export type ConsensusSummary = {
   pendingCount: number;
   failedCount: number;
   timeoutCount: number;
-  /** Number of resolvers returning the consensus value */
   agreementCount: number;
-  /** Most common successful answer, or null if none yet */
   consensusValue: string | null;
-  /** Distinct successful answers */
   distinctSuccessValues: string[];
-  /** Share of total resolvers that match consensus (0–100) */
   agreementPercent: number;
   outliers: ConsensusOutlier[];
-  /** True when at least one resolver has a final result */
   hasResults: boolean;
+  expectedValue: string | null;
+  expectedMatchCount: number;
+  expectedMismatchCount: number;
 };
 
-function normalizeAnswer(value: string) {
+export type ResultChips = {
+  distinct: number;
+  consensus: number;
+  pending: number;
+  failed: number;
+};
+
+export type RunDiffChange = {
+  id: string;
+  resolver: string;
+  previousValue: string;
+  previousStatus: ResolverStatus;
+  currentValue: string;
+  currentStatus: ResolverStatus;
+  kind: "changed" | "added" | "removed";
+};
+
+export type RunDiffSummary = {
+  changed: RunDiffChange[];
+  added: RunDiffChange[];
+  removed: RunDiffChange[];
+  unchanged: number;
+};
+
+export function normalizeAnswer(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
+export function answersMatch(left: string, right: string) {
+  return (
+    normalizeAnswer(left).toLowerCase() === normalizeAnswer(right).toLowerCase()
+  );
+}
+
 export function computeConsensus(
-  results: ResolverMapNode[]
+  results: ResolverMapNode[],
+  expectedValue?: string | null
 ): ConsensusSummary {
+  const trimmedExpected = expectedValue?.trim() || null;
   const totalResolvers = results.length;
   const successResults = results.filter((result) => result.status === "success");
   const pendingCount = results.filter(
@@ -76,18 +106,35 @@ export function computeConsensus(
     .sort((left, right) => right.count - left.count)
     .map((entry) => entry.display);
 
+  let expectedMatchCount = 0;
+  let expectedMismatchCount = 0;
   const outliers: ConsensusOutlier[] = [];
 
   for (const result of results) {
     if (result.status === "success") {
-      const key = normalizeAnswer(result.value.trim() || "(empty)").toLowerCase();
+      const display = result.value.trim() || "(empty)";
+      const key = normalizeAnswer(display).toLowerCase();
 
-      if (consensusKey !== null && key !== consensusKey) {
+      if (trimmedExpected) {
+        if (answersMatch(display, trimmedExpected)) {
+          expectedMatchCount += 1;
+        } else {
+          expectedMismatchCount += 1;
+          outliers.push({
+            id: result.id,
+            resolver: result.resolver,
+            provider: result.provider,
+            value: display,
+            status: result.status,
+            reason: "expected-mismatch"
+          });
+        }
+      } else if (consensusKey !== null && key !== consensusKey) {
         outliers.push({
           id: result.id,
           resolver: result.resolver,
           provider: result.provider,
-          value: result.value.trim() || "(empty)",
+          value: display,
           status: result.status,
           reason: "mismatch"
         });
@@ -109,7 +156,12 @@ export function computeConsensus(
   }
 
   outliers.sort((left, right) => {
-    const reasonOrder = { mismatch: 0, failed: 1, timeout: 2 } as const;
+    const reasonOrder = {
+      "expected-mismatch": 0,
+      mismatch: 1,
+      failed: 2,
+      timeout: 3
+    } as const;
     return (
       reasonOrder[left.reason] - reasonOrder[right.reason] ||
       left.resolver.localeCompare(right.resolver)
@@ -135,6 +187,99 @@ export function computeConsensus(
         result.status === "success" ||
         result.status === "failed" ||
         result.status === "timeout"
-    )
+    ),
+    expectedValue: trimmedExpected,
+    expectedMatchCount,
+    expectedMismatchCount
   };
+}
+
+export function computeResultChips(
+  results: ResolverMapNode[],
+  expectedValue?: string | null
+): ResultChips {
+  const consensus = computeConsensus(results, expectedValue);
+
+  return {
+    distinct: consensus.distinctSuccessValues.length,
+    consensus: consensus.agreementCount,
+    pending: consensus.pendingCount,
+    failed: consensus.failedCount + consensus.timeoutCount
+  };
+}
+
+export function diffResolverRuns(
+  previous: ResolverMapNode[] | null | undefined,
+  current: ResolverMapNode[]
+): RunDiffSummary | null {
+  if (!previous || previous.length === 0) {
+    return null;
+  }
+
+  const previousById = new Map(previous.map((node) => [node.id, node]));
+  const currentById = new Map(current.map((node) => [node.id, node]));
+  const changed: RunDiffChange[] = [];
+  const added: RunDiffChange[] = [];
+  const removed: RunDiffChange[] = [];
+  let unchanged = 0;
+
+  for (const node of current) {
+    const prior = previousById.get(node.id);
+
+    if (!prior) {
+      added.push({
+        id: node.id,
+        resolver: node.resolver,
+        previousValue: "—",
+        previousStatus: "idle",
+        currentValue: node.value,
+        currentStatus: node.status,
+        kind: "added"
+      });
+      continue;
+    }
+
+    const priorDisplay =
+      prior.status === "success"
+        ? prior.value.trim() || "(empty)"
+        : prior.error?.trim() || prior.value || prior.status;
+    const currentDisplay =
+      node.status === "success"
+        ? node.value.trim() || "(empty)"
+        : node.error?.trim() || node.value || node.status;
+
+    if (
+      prior.status === node.status &&
+      answersMatch(String(priorDisplay), String(currentDisplay))
+    ) {
+      unchanged += 1;
+      continue;
+    }
+
+    changed.push({
+      id: node.id,
+      resolver: node.resolver,
+      previousValue: String(priorDisplay),
+      previousStatus: prior.status,
+      currentValue: String(currentDisplay),
+      currentStatus: node.status,
+      kind: "changed"
+    });
+  }
+
+  for (const prior of previous) {
+    if (!currentById.has(prior.id)) {
+      removed.push({
+        id: prior.id,
+        resolver: prior.resolver,
+        previousValue: prior.value,
+        previousStatus: prior.status,
+        currentValue: "—",
+        currentStatus: "idle",
+        kind: "removed"
+      });
+    }
+  }
+
+  return { changed, added, removed, unchanged };
 }

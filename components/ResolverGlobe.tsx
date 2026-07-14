@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import { CopyButton } from "@/components/CopyButton";
 import { Alert } from "@/components/animate-ui/components/feedback/alert";
 import { Box } from "@/components/animate-ui/components/layout/box";
 import {
@@ -129,9 +130,12 @@ export function ResolverGlobe({
                 </Box>
 
                 <MetricCard className="border border-white/10 bg-slate-950/25 p-4">
-                  <Text as="span" className="text-xs uppercase tracking-[0.24em] text-slate-500">
-                    Resolver
-                  </Text>
+                  <Box className="flex items-center justify-between gap-2">
+                    <Text as="span" className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                      Resolver
+                    </Text>
+                    <CopyButton value={focusedResolver.server} label="Server" />
+                  </Box>
                   <Text className="mt-2 font-mono text-sm text-white">{focusedResolver.server}</Text>
                 </MetricCard>
 
@@ -153,9 +157,12 @@ export function ResolverGlobe({
                 </Box>
 
                 <MetricCard className="border border-white/10 bg-slate-950/25 p-4">
-                  <Text as="span" className="text-xs uppercase tracking-[0.24em] text-slate-500">
-                    Response
-                  </Text>
+                  <Box className="flex items-center justify-between gap-2">
+                    <Text as="span" className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                      Response
+                    </Text>
+                    <CopyButton value={focusedResolver.value} label="Answer" />
+                  </Box>
                   <Text className="mt-2 break-words font-mono text-xs leading-6 text-white">
                     {focusedResolver.value}
                   </Text>

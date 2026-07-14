@@ -19,8 +19,13 @@ import {
   PanelTitle
 } from "@/components/animate-ui/components/layout/panel";
 import { Eyebrow, Text } from "@/components/animate-ui/components/typography/text";
+import { CopyButton } from "@/components/CopyButton";
+import { ResultChipsRow } from "@/components/ResultChipsRow";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { ResolverMapNode } from "@/lib/types";
+import { answersMatch } from "@/lib/consensus";
+import { getResultNextActions } from "@/lib/resultHints";
+import type { RecordType, ResolverMapNode } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type LiveResultsTableProps = {
   results: ResolverMapNode[];
@@ -28,6 +33,8 @@ type LiveResultsTableProps = {
   paused: boolean;
   hasChecked: boolean;
   hasActiveFilters: boolean;
+  expectedValue?: string | null;
+  recordType: RecordType;
 };
 
 export function LiveResultsTable({
@@ -35,7 +42,9 @@ export function LiveResultsTable({
   loading,
   paused,
   hasChecked,
-  hasActiveFilters
+  hasActiveFilters,
+  expectedValue,
+  recordType
 }: LiveResultsTableProps) {
   const [now, setNow] = useState(0);
   const [hydrated, setHydrated] = useState(false);
@@ -57,6 +66,23 @@ export function LiveResultsTable({
       ? "Check complete"
       : "Awaiting next run";
 
+  const emptyHint = (() => {
+    if (!hasChecked) {
+      return "Start a bulk or single-domain run to stream resolver updates here.";
+    }
+
+    if (hasActiveFilters) {
+      return "No resolver rows match the current filters.";
+    }
+
+    const actions = getResultNextActions(results, recordType);
+    if (actions[0]) {
+      return `${actions[0].title}: ${actions[0].detail}`;
+    }
+
+    return "No resolver results are available for this domain yet.";
+  })();
+
   return (
     <Panel className="overflow-hidden rounded-[32px]">
       <PanelHeader>
@@ -74,6 +100,11 @@ export function LiveResultsTable({
             ) : null}
           </Box>
         </Box>
+        {hasChecked || loading ? (
+          <Box className="mt-4">
+            <ResultChipsRow results={results} expectedValue={expectedValue} />
+          </Box>
+        ) : null}
       </PanelHeader>
 
       <Box className="overflow-x-auto">
@@ -87,6 +118,7 @@ export function LiveResultsTable({
               <TableHead>Status</TableHead>
               <TableHead>Latency</TableHead>
               <TableHead>Updated</TableHead>
+              <TableHead>Copy</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -98,6 +130,21 @@ export function LiveResultsTable({
                     now - result.updatedAt < 1400 &&
                     result.status !== "pending";
 
+                  const expectedMismatch =
+                    Boolean(expectedValue?.trim()) &&
+                    result.status === "success" &&
+                    !answersMatch(result.value, expectedValue ?? "");
+
+                  const copyPayload = [
+                    result.resolver,
+                    result.server,
+                    result.status,
+                    result.value,
+                    result.error ?? ""
+                  ]
+                    .filter(Boolean)
+                    .join("\n");
+
                   return (
                     <TableRow
                       key={result.id}
@@ -106,10 +153,11 @@ export function LiveResultsTable({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.22 }}
-                      className={[
+                      className={cn(
                         "border-t border-white/5 transition-colors duration-500 hover:bg-white/[0.03]",
-                        isFresh ? "bg-white/[0.04]" : ""
-                      ].join(" ")}
+                        isFresh ? "bg-white/[0.04]" : "",
+                        expectedMismatch ? "bg-amber-400/[0.06]" : ""
+                      )}
                     >
                       <TableCell>
                         <Box className="font-medium text-slate-100">
@@ -135,6 +183,11 @@ export function LiveResultsTable({
                         >
                           {result.value}
                         </Text>
+                        {expectedMismatch ? (
+                          <Text as="span" className="mt-2 block text-xs text-amber-200">
+                            Does not match expected value
+                          </Text>
+                        ) : null}
                         {result.error ? (
                           <Text as="span" className="mt-2 block text-xs text-rose-300/90">
                             {result.error}
@@ -163,18 +216,21 @@ export function LiveResultsTable({
                             : "Waiting"}
                         </Text>
                       </TableCell>
+                      <TableCell>
+                        <Box className="flex flex-col gap-1">
+                          <CopyButton value={result.value} label="Answer" />
+                          <CopyButton value={result.server} label="Server" />
+                          <CopyButton value={copyPayload} label="Row" />
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
               </AnimatePresence>
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="px-6 py-14 text-center text-slate-400">
-                  {hasChecked
-                    ? hasActiveFilters
-                      ? "No resolver rows match the current filters."
-                      : "No resolver results are available for this domain yet."
-                    : "Start a bulk or single-domain run to stream resolver updates here."}
+                <TableCell colSpan={8} className="px-6 py-14 text-center text-slate-400">
+                  {emptyHint}
                 </TableCell>
               </TableRow>
             )}

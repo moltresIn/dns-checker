@@ -5,6 +5,7 @@ import { Button } from "@/components/animate-ui/components/buttons/button";
 import { Alert } from "@/components/animate-ui/components/feedback/alert";
 import { Form } from "@/components/animate-ui/components/form/form";
 import { Field, FieldLabel } from "@/components/animate-ui/components/form/field";
+import { Input } from "@/components/animate-ui/components/form/input";
 import { SelectMenu } from "@/components/animate-ui/components/form/select-menu";
 import { Box } from "@/components/animate-ui/components/layout/box";
 import { Panel } from "@/components/animate-ui/components/layout/panel";
@@ -19,7 +20,6 @@ import { BulkInput } from "@/components/BulkInput";
 import { DomainInput } from "@/components/DomainInput";
 import { RecordTypeSelect } from "@/components/RecordTypeSelect";
 import { MAX_DOMAINS } from "@/hooks/useDnsJob";
-import { cn } from "@/lib/utils";
 import type { RecordType } from "@/lib/types";
 
 export type SearchMode = "single" | "bulk";
@@ -35,6 +35,8 @@ type SearchFormProps = {
   onRecordTypeChange: (value: RecordType) => void;
   retryCount: number;
   onRetryCountChange: (value: number) => void;
+  expectedValue: string;
+  onExpectedValueChange: (value: string) => void;
   jobRunning: boolean;
   livePaused: boolean;
   onTogglePause: () => void;
@@ -64,6 +66,8 @@ export function SearchForm({
   onRecordTypeChange,
   retryCount,
   onRetryCountChange,
+  expectedValue,
+  onExpectedValueChange,
   jobRunning,
   livePaused,
   onTogglePause,
@@ -99,14 +103,7 @@ export function SearchForm({
           </Tabs>
         </Field>
 
-        <Box
-          className={cn(
-            "grid gap-5",
-            searchMode === "bulk"
-              ? "xl:grid-cols-[minmax(0,1fr)_220px_180px]"
-              : "xl:grid-cols-[minmax(0,1fr)_220px_180px_220px]"
-          )}
-        >
+        <Box className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_220px_180px]">
           {searchMode === "bulk" ? (
             <BulkInput
               value={bulkInput}
@@ -144,33 +141,46 @@ export function SearchForm({
               }))}
             />
           </Field>
-
-          {searchMode === "single" ? (
-            <Box className="flex flex-col justify-end gap-3">
-              <Button
-                type="submit"
-                disabled={jobRunning || inputIsSettling}
-                hoverScale={1.02}
-                tapScale={0.98}
-                className={primaryButtonClassName}
-              >
-                {jobRunning ? "Streaming..." : "Check DNS"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onTogglePause}
-                hoverScale={1.01}
-                tapScale={0.99}
-                className={secondaryButtonClassName}
-              >
-                {livePaused ? "Resume Live" : "Pause Live"}
-              </Button>
-            </Box>
-          ) : null}
         </Box>
 
-        {searchMode === "bulk" ? (
+        <Field>
+          <FieldLabel>Expected value (optional)</FieldLabel>
+          <Input
+            type="text"
+            value={expectedValue}
+            disabled={jobRunning}
+            placeholder="e.g. 93.184.216.34 or target hostname"
+            onChange={(event) => onExpectedValueChange(event.target.value)}
+            suppressHydrationWarning
+          />
+          <span className="text-xs text-neutral-500">
+            When set, mismatches are highlighted in the consensus card and results table.
+          </span>
+        </Field>
+
+        {searchMode === "single" ? (
+          <Box className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button
+              type="submit"
+              disabled={jobRunning || inputIsSettling}
+              hoverScale={1.02}
+              tapScale={0.98}
+              className={primaryButtonClassName}
+            >
+              {jobRunning ? "Streaming..." : "Check DNS"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onTogglePause}
+              hoverScale={1.01}
+              tapScale={0.99}
+              className={secondaryButtonClassName}
+            >
+              {livePaused ? "Resume Live" : "Pause Live"}
+            </Button>
+          </Box>
+        ) : (
           <Box className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button
               type="submit"
@@ -192,7 +202,7 @@ export function SearchForm({
               {livePaused ? "Resume Live" : "Pause Live"}
             </Button>
           </Box>
-        ) : null}
+        )}
       </Form>
 
       {error ? <Alert className="mt-5">{error}</Alert> : null}

@@ -14,9 +14,11 @@ import { ConsensusSummaryCard } from "@/components/ConsensusSummaryCard";
 import { LiveResultsTable } from "@/components/LiveResultsTable";
 import { ResolverFilters } from "@/components/ResolverFilters";
 import { ResolverGlobe } from "@/components/ResolverGlobe";
+import { RunDiffCard } from "@/components/RunDiffCard";
 import { TimelineChart } from "@/components/TimelineChart";
 import type { DomainViewState } from "@/lib/domainState";
 import type {
+  RecordType,
   ResolverFilterOptions,
   ResolverFilters as ResolverFiltersState,
   ResolverMapNode
@@ -32,6 +34,9 @@ type ResultsSectionProps = {
   mappedResults: ResolverMapNode[];
   filteredResults: ResolverMapNode[];
   activeDomainState: DomainViewState;
+  previousResults: ResolverMapNode[] | null;
+  expectedValue: string;
+  recordType: RecordType;
   jobRunning: boolean;
   livePaused: boolean;
   filterIsActive: boolean;
@@ -55,6 +60,9 @@ export function ResultsSection({
   mappedResults,
   filteredResults,
   activeDomainState,
+  previousResults,
+  expectedValue,
+  recordType,
   jobRunning,
   livePaused,
   filterIsActive,
@@ -105,6 +113,8 @@ export function ResultsSection({
       paused={livePaused}
       hasChecked={activeDomainState.checkedAt !== null}
       hasActiveFilters={filterIsActive}
+      expectedValue={expectedValue}
+      recordType={recordType}
     />
   );
 
@@ -112,15 +122,27 @@ export function ResultsSection({
     <ConsensusSummaryCard
       results={activeDomainState.results}
       domain={activeDomainState.domain}
+      recordType={recordType}
       hasChecked={activeDomainState.checkedAt !== null}
       loading={jobRunning}
+      expectedValue={expectedValue}
     />
   );
+
+  const diffPanel =
+    activeDomainState.checkedAt !== null ? (
+      <RunDiffCard
+        previousResults={previousResults}
+        currentResults={activeDomainState.results}
+        domain={activeDomainState.domain}
+      />
+    ) : null;
 
   return (
     <>
       <Box className="hidden flex-col gap-8 lg:flex">
         {consensusPanel}
+        {diffPanel}
         {filtersPanel}
         {globePanel}
         {timelinePanel}
@@ -129,8 +151,9 @@ export function ResultsSection({
 
       <Box className="flex flex-col gap-6 lg:hidden">
         {consensusPanel}
+        {diffPanel}
 
-        <Tabs defaultValue="filters" className="gap-6">
+        <Tabs defaultValue="table" className="gap-6">
           <TabsList className="glass-panel inline-flex w-full rounded-[22px] border border-white/10 bg-black/60 p-1">
             <TabsHighlight className="rounded-[16px] bg-gradient-to-r from-neutral-300 to-white">
               <TabsHighlightItem value="filters" className="rounded-[16px]">

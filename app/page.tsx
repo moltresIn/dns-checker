@@ -28,6 +28,7 @@ export default function HomePage() {
   const [singleInput, setSingleInput] = useState("example.com");
   const [recordType, setRecordType] = useState<RecordType>("A");
   const [retryCount, setRetryCount] = useState(1);
+  const [expectedValue, setExpectedValue] = useState("");
   const [filters, setFilters] = useState<ResolverFiltersState>(EMPTY_FILTERS);
   const [hydrated, setHydrated] = useState(false);
 
@@ -52,6 +53,7 @@ export default function HomePage() {
   const {
     domainStates,
     setDomainStates,
+    previousRunResults,
     domainOrder,
     activeDomain,
     setActiveDomain,
@@ -144,6 +146,8 @@ export default function HomePage() {
           onRecordTypeChange={setRecordType}
           retryCount={retryCount}
           onRetryCountChange={setRetryCount}
+          expectedValue={expectedValue}
+          onExpectedValueChange={setExpectedValue}
           jobRunning={jobRunning}
           livePaused={livePaused}
           onTogglePause={togglePause}
@@ -171,6 +175,11 @@ export default function HomePage() {
             mappedResults={mappedResults}
             filteredResults={filteredResults}
             activeDomainState={activeDomainState}
+            previousResults={
+              activeDomain ? (previousRunResults[activeDomain] ?? null) : null
+            }
+            expectedValue={expectedValue}
+            recordType={recordType}
             jobRunning={jobRunning}
             livePaused={livePaused}
             filterIsActive={filterIsActive}

@@ -13,20 +13,28 @@ import {
   Eyebrow,
   Text
 } from "@/components/animate-ui/components/typography/text";
+import { ResultChipsRow } from "@/components/ResultChipsRow";
 import {
   computeConsensus,
   type ConsensusOutlier
 } from "@/lib/consensus";
-import type { ResolverMapNode } from "@/lib/types";
+import { getResultNextActions } from "@/lib/resultHints";
+import type { RecordType, ResolverMapNode } from "@/lib/types";
 
 type ConsensusSummaryCardProps = {
   results: ResolverMapNode[];
   domain: string;
+  recordType: RecordType;
   hasChecked: boolean;
   loading: boolean;
+  expectedValue?: string | null;
 };
 
 function outlierLabel(outlier: ConsensusOutlier) {
+  if (outlier.reason === "expected-mismatch") {
+    return "≠ expected";
+  }
+
   if (outlier.reason === "mismatch") {
     return "Mismatch";
   }
@@ -41,14 +49,17 @@ function outlierLabel(outlier: ConsensusOutlier) {
 export function ConsensusSummaryCard({
   results,
   domain,
+  recordType,
   hasChecked,
-  loading
+  loading,
+  expectedValue
 }: ConsensusSummaryCardProps) {
   if (!hasChecked && !loading) {
     return null;
   }
 
-  const consensus = computeConsensus(results);
+  const consensus = computeConsensus(results, expectedValue);
+  const nextActions = getResultNextActions(results, recordType);
 
   return (
     <Panel className="p-6 lg:p-8">
@@ -80,6 +91,12 @@ export function ConsensusSummaryCard({
           </MetricCard>
         ) : null}
       </Box>
+
+      {consensus.hasResults ? (
+        <Box className="mt-5">
+          <ResultChipsRow results={results} expectedValue={expectedValue} />
+        </Box>
+      ) : null}
 
       {!consensus.hasResults ? (
         <Box className="mt-6 rounded-[24px] border border-dashed border-white/10 px-4 py-5 text-sm text-neutral-400">
@@ -114,6 +131,20 @@ export function ConsensusSummaryCard({
                     {consensus.consensusValue}
                   </Text>
                 </Box>
+                {consensus.expectedValue ? (
+                  <Box className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                    <Text as="span" className="text-xs uppercase tracking-[0.24em] text-neutral-500">
+                      Expected value
+                    </Text>
+                    <Text className="mt-2 break-all font-mono text-sm leading-6 text-white">
+                      {consensus.expectedValue}
+                    </Text>
+                    <Text className="mt-2 text-sm text-neutral-400">
+                      {consensus.expectedMatchCount} match ·{" "}
+                      {consensus.expectedMismatchCount} mismatch
+                    </Text>
+                  </Box>
+                ) : null}
               </>
             ) : (
               <>
@@ -146,7 +177,9 @@ export function ConsensusSummaryCard({
               <Text className="mt-4 text-sm text-neutral-400">
                 {consensus.pendingCount > 0
                   ? "No mismatches yet — some resolvers are still pending."
-                  : "All finished resolvers match the consensus answer."}
+                  : consensus.expectedValue
+                    ? "All successful resolvers match the expected value."
+                    : "All finished resolvers match the consensus answer."}
               </Text>
             ) : (
               <Box className="subtle-scrollbar mt-4 flex max-h-48 flex-col gap-2 overflow-y-auto pr-1">
@@ -162,7 +195,10 @@ export function ConsensusSummaryCard({
                       <Badge
                         size="sm"
                         variant={
-                          outlier.reason === "mismatch" ? "warning" : "danger"
+                          outlier.reason === "mismatch" ||
+                          outlier.reason === "expected-mismatch"
+                            ? "warning"
+                            : "danger"
                         }
                         className="normal-case tracking-normal"
                       >
@@ -185,6 +221,22 @@ export function ConsensusSummaryCard({
           </MetricCard>
         </Box>
       )}
+
+      {nextActions.length > 0 ? (
+        <Box className="mt-6 grid gap-3">
+          {nextActions.map((action) => (
+            <Box
+              key={action.id}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
+            >
+              <Text className="text-sm font-medium text-white">{action.title}</Text>
+              <Text className="mt-1 text-sm leading-6 text-neutral-400">
+                {action.detail}
+              </Text>
+            </Box>
+          ))}
+        </Box>
+      ) : null}
     </Panel>
   );
 }
