@@ -1,18 +1,18 @@
 "use client";
 
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, useTexture } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { geoEquirectangular, geoGraticule10, geoPath } from "d3-geo";
-import { useMemo, useRef } from "react";
+import { Component, Suspense, useMemo, useRef, type ErrorInfo, type ReactNode } from "react";
+import { geoEquirectangular, geoPath } from "d3-geo";
 import countriesAtlas from "world-atlas/countries-110m.json";
 import { feature } from "topojson-client";
 import {
+  BackSide,
   CanvasTexture,
   Color,
   LinearFilter,
   MathUtils,
   Mesh,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Quaternion,
   SRGBColorSpace,
@@ -20,6 +20,7 @@ import {
   type Group
 } from "three";
 import type { ResolverMapNode, ResolverStatus } from "@/lib/types";
+import earthDayUrl from "@/assets/globe/earth-day.jpg";
 
 type ResolverGlobeSceneProps = {
   resolvers: ResolverMapNode[];
@@ -77,7 +78,7 @@ function latLngToVector(lat: number, lng: number, radius: number) {
   );
 }
 
-function createWorldTexture() {
+function createProceduralEarthTexture() {
   const width = 2048;
   const height = 1024;
   const canvas = document.createElement("canvas");
@@ -85,9 +86,8 @@ function createWorldTexture() {
   canvas.height = height;
 
   const context = canvas.getContext("2d");
-
   if (!context) {
-    throw new Error("Unable to create world texture canvas.");
+    throw new Error("Unable to create earth texture canvas.");
   }
 
   const projection = geoEquirectangular()
@@ -95,92 +95,116 @@ function createWorldTexture() {
     .scale(width / (2 * Math.PI));
   const path = geoPath(projection, context);
 
-  const oceanGradient = context.createLinearGradient(0, 0, width, height);
-  oceanGradient.addColorStop(0, "#050505");
-  oceanGradient.addColorStop(0.4, "#0a0a0a");
-  oceanGradient.addColorStop(1, "#171717");
-  context.fillStyle = oceanGradient;
+  const ocean = context.createLinearGradient(0, 0, 0, height);
+  ocean.addColorStop(0, "#0a2a4a");
+  ocean.addColorStop(0.35, "#0d4a7a");
+  ocean.addColorStop(0.65, "#0c3f6e");
+  ocean.addColorStop(1, "#081f38");
+  context.fillStyle = ocean;
   context.fillRect(0, 0, width, height);
-
-  const bloomGradient = context.createRadialGradient(
-    width * 0.28,
-    height * 0.24,
-    20,
-    width * 0.5,
-    height * 0.5,
-    width * 0.7
-  );
-  bloomGradient.addColorStop(0, "rgba(255, 255, 255, 0.08)");
-  bloomGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
-  context.fillStyle = bloomGradient;
-  context.fillRect(0, 0, width, height);
-
-  context.beginPath();
-  path(geoGraticule10());
-  context.strokeStyle = "rgba(255, 255, 255, 0.06)";
-  context.lineWidth = 0.8;
-  context.stroke();
 
   for (const country of countryFeatures) {
     context.beginPath();
     path(country as never);
-    context.fillStyle = "#1a1a1a";
+    context.fillStyle = "#2f6b3a";
     context.fill();
   }
 
   for (const country of countryFeatures) {
     context.beginPath();
     path(country as never);
-    context.strokeStyle = "rgba(255, 255, 255, 0.18)";
-    context.lineWidth = 0.65;
+    context.strokeStyle = "rgba(20, 40, 20, 0.35)";
+    context.lineWidth = 0.6;
     context.stroke();
   }
 
-  const polarGradient = context.createLinearGradient(0, 0, 0, height);
-  polarGradient.addColorStop(0, "rgba(255, 255, 255, 0.12)");
-  polarGradient.addColorStop(0.12, "rgba(255, 255, 255, 0)");
-  polarGradient.addColorStop(0.88, "rgba(255, 255, 255, 0)");
-  polarGradient.addColorStop(1, "rgba(255, 255, 255, 0.14)");
-  context.fillStyle = polarGradient;
+  const poles = context.createLinearGradient(0, 0, 0, height);
+  poles.addColorStop(0, "rgba(235, 245, 255, 0.85)");
+  poles.addColorStop(0.08, "rgba(235, 245, 255, 0)");
+  poles.addColorStop(0.92, "rgba(235, 245, 255, 0)");
+  poles.addColorStop(1, "rgba(235, 245, 255, 0.9)");
+  context.fillStyle = poles;
   context.fillRect(0, 0, width, height);
 
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
-
   return texture;
 }
 
-function GlobeSurface() {
-  const worldTexture = useMemo(() => createWorldTexture(), []);
+function Atmosphere() {
+  return (
+    <>
+      <mesh scale={1.04}>
+        <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+        <meshBasicMaterial
+          color="#6eb6ff"
+          transparent
+          opacity={0.16}
+          side={BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh scale={1.015}>
+        <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+        <meshBasicMaterial color="#9ad0ff" transparent opacity={0.05} depthWrite={false} />
+      </mesh>
+    </>
+  );
+}
+
+function ProceduralEarth() {
+  const map = useMemo(() => createProceduralEarthTexture(), []);
 
   return (
     <group>
       <mesh>
         <sphereGeometry args={[GLOBE_RADIUS, 96, 96]} />
-        <meshStandardMaterial
-          map={worldTexture}
-          color="#737373"
-          roughness={0.92}
-          metalness={0.04}
-        />
+        <meshStandardMaterial map={map} roughness={0.82} metalness={0.08} />
       </mesh>
-
-      <mesh scale={1.02}>
-        <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
-        <meshPhysicalMaterial
-          transparent
-          opacity={0.15}
-          color="#88DFFF"
-          roughness={0.18}
-          metalness={0}
-          transmission={0.06}
-          clearcoat={0.8}
-        />
-      </mesh>
+      <Atmosphere />
     </group>
   );
+}
+
+function TexturedEarth() {
+  const dayMap = useTexture(typeof earthDayUrl === "string" ? earthDayUrl : earthDayUrl.src);
+
+  dayMap.colorSpace = SRGBColorSpace;
+  dayMap.anisotropy = 8;
+
+  return (
+    <group>
+      <mesh>
+        <sphereGeometry args={[GLOBE_RADIUS, 96, 96]} />
+        <meshStandardMaterial map={dayMap} roughness={0.78} metalness={0.05} />
+      </mesh>
+      <Atmosphere />
+    </group>
+  );
+}
+
+class GlobeErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Globe texture failed, using procedural Earth.", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
 }
 
 function ResolverPin({ resolver, selected, onHoverChange, onSelect }: ResolverPinProps) {
@@ -217,7 +241,7 @@ function ResolverPin({ resolver, selected, onHoverChange, onSelect }: ResolverPi
 
     headMaterial.color.lerp(color, 1 - Math.exp(-9 * delta));
     headMaterial.emissive.lerp(color, 1 - Math.exp(-9 * delta));
-    headMaterial.emissiveIntensity = selected ? 0.8 : resolver.matched ? 0.36 : 0.12;
+    headMaterial.emissiveIntensity = selected ? 1.1 : resolver.matched ? 0.55 : 0.12;
     headMaterial.opacity = opacity;
 
     stemMaterial.color.lerp(color, 1 - Math.exp(-9 * delta));
@@ -267,21 +291,6 @@ function ResolverPin({ resolver, selected, onHoverChange, onSelect }: ResolverPi
   );
 }
 
-function GlobeShell() {
-  return (
-    <group>
-      <mesh scale={1.04}>
-        <sphereGeometry args={[GLOBE_RADIUS, 48, 48]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.04} />
-      </mesh>
-      <mesh scale={1.065}>
-        <sphereGeometry args={[GLOBE_RADIUS, 32, 32]} />
-        <meshBasicMaterial color="#d4d4d4" transparent opacity={0.025} />
-      </mesh>
-    </group>
-  );
-}
-
 export default function ResolverGlobeScene({
   resolvers,
   selectedId,
@@ -290,18 +299,21 @@ export default function ResolverGlobeScene({
 }: ResolverGlobeSceneProps) {
   return (
     <Canvas
-      camera={{ position: [0, 0, 6.4], fov: 38 }}
+      camera={{ position: [0, 0.35, 6.2], fov: 38 }}
       dpr={[1, 1.8]}
       className="h-full w-full"
+      gl={{ antialias: true, alpha: false }}
     >
       <color attach="background" args={["#000000"]} />
-      <fog attach="fog" args={["#000000", 7, 11]} />
-      <ambientLight intensity={1.5} />
-      <directionalLight position={[4, 5, 3]} intensity={2.2} color="#fafafa" />
-      <pointLight position={[-5, -3, -4]} intensity={1.1} color="#d4d4d4" />
-      <pointLight position={[0, 2, 6]} intensity={0.7} color="#a3a3a3" />
-      <GlobeSurface />
-      <GlobeShell />
+      <fog attach="fog" args={["#000000", 9, 14]} />
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[5.5, 3.2, 2.4]} intensity={1.85} color="#fff6e8" />
+      <directionalLight position={[-4, -1.5, -3]} intensity={0.35} color="#7eb6ff" />
+      <GlobeErrorBoundary fallback={<ProceduralEarth />}>
+        <Suspense fallback={<ProceduralEarth />}>
+          <TexturedEarth />
+        </Suspense>
+      </GlobeErrorBoundary>
       {resolvers.map((resolver) => (
         <ResolverPin
           key={resolver.id}
